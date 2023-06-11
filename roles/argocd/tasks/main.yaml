@@ -1,0 +1,57 @@
+---
+- name: install virtualenv
+  ansible.builtin.package:
+    name: "{{ virtualenv_pkg_name[ansible_distribution] }}"
+    state: present
+  become: true
+  vars:
+    virtualenv_pkg_name:
+      CentOS: python-virtualenv
+      Ubuntu: python3-virtualenv
+
+- name: Install multi python packages with version specifiers
+  ansible.builtin.pip:
+    virtualenv: "{{ ansible_env.PWD }}/k8s-python"
+    virtualenv_python: python3
+    name:
+      - kubernetes
+      - jsonpatch
+
+- name: Create a k8s namespace
+  vars:
+    ansible_python_interpreter: "{{ ansible_env.PWD }}/k8s-python/bin/python"
+
+  kubernetes.core.k8s:
+    name: argocd
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Download Helm
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+    dest: ~/get_helm.sh
+    mode: '700'
+
+- name: install Helm
+  shell: ./get_helm.sh
+  register: ret
+  changed_when: "'is already latest' not in ret.stdout"
+
+- name: "Install Helm Diff"
+  kubernetes.core.helm_plugin:
+    plugin_path: "https://github.com/databus23/helm-diff"
+    state: present
+
+- name: Add argo chart repo
+  kubernetes.core.helm_repository:
+    name: argo
+    repo_url: "https://argoproj.github.io/argo-helm"
+
+- name: Deploy chart
+  kubernetes.core.helm:
+    kubeconfig: "{{ kubeconfig_path }}"
+    namespace: argocd
+    name: argocd
+    chart_ref: argo/argo-cd
+    values: "{{ argocd_helm_values }}"
