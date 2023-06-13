@@ -1,0 +1,9 @@
+---
+- name: install Argo CD
+  hosts: all
+  module_defaults:
+    kubernetes.core.k8s:
+      kubeconfig: "{{ kubeconfig_path }}"
+  roles:
+    - argocd-sa
+

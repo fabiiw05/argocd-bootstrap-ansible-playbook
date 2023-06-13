@@ -1,0 +1,27 @@
+---
+- name: install virtualenv
+  ansible.builtin.package:
+    name: "{{ virtualenv_pkg_name[ansible_distribution] }}"
+    state: present
+  become: true
+  vars:
+    virtualenv_pkg_name:
+      CentOS: python-virtualenv
+      Ubuntu: python3-virtualenv
+
+- name: Install multi python packages with version specifiers
+  ansible.builtin.pip:
+    virtualenv: "{{ ansible_env.PWD }}/k8s-python"
+    virtualenv_python: python3
+    name:
+      - kubernetes
+      - jsonpatch
+
+- name: Create a argocd sa
+  vars:
+    ansible_python_interpreter: "{{ ansible_env.PWD }}/k8s-python/bin/python"
+
+  kubernetes.core.k8s:
+    state: present
+    template: 'argocd-sa.yaml.j2'
+
