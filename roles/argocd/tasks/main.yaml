@@ -48,10 +48,18 @@
     name: argo
     repo_url: "https://argoproj.github.io/argo-helm"
 
-- name: Deploy chart
+- name: Deploy argo/argocd-cd
   kubernetes.core.helm:
     kubeconfig: "{{ kubeconfig_path }}"
     namespace: argocd
     name: argocd
     chart_ref: argo/argo-cd
     values: "{{ argocd_helm_values }}"
+
+- name: Deploy argo/argocd-apps
+  kubernetes.core.helm:
+    kubeconfig: "{{ kubeconfig_path }}"
+    namespace: argocd
+    name: argocd-app
+    chart_ref: argo/argocd-apps
+    values: "{{ argocd_apps_helm_values }}"
